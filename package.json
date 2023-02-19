@@ -1,0 +1,25 @@
+{
+  "name": "artist-search",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint --fix \"**/*.ts\"",
+    "format": "prettier --write \"**/*.ts\""
+  },
+  "author": "Long Doan",
+  "license": "MIT",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.52.0",
+    "@typescript-eslint/parser": "^5.52.0",
+    "eslint": "^8.34.0",
+    "prettier": "^2.8.4",
+    "tsx": "^3.12.3",
+    "typescript": "^4.9.5"
+  }
+}
