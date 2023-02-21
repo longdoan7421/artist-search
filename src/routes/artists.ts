@@ -2,31 +2,31 @@ import randomArtists from '@/data/randomArtists.json';
 import { Artist } from '@/entities/Artist';
 import artistService from '@/services/artistService';
 import { stringify } from 'csv-stringify';
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import { FromSchema } from 'json-schema-to-ts';
 import path from 'node:path';
-import stream from "node:stream";
+import stream from 'node:stream';
 
-export async function routes(server: FastifyInstance, options: any) {
-  interface IArtistSearchQueryString {
-    name?: string;
-    filename?: string;
-  }
+export async function routes(server: FastifyInstance, options: FastifyPluginOptions) {
+  const searchArtistsQueryStringSchema = {
+    type: 'object',
+    properties: {
+      name: { type: 'string' },
+      filename: { type: 'string' },
+    },
+    required: ['filename'],
+  } as const;
 
-  server.get(
+  server.get<{ Querystring: FromSchema<typeof searchArtistsQueryStringSchema> }>(
     '/artists',
     {
-      preValidation: (req, res, done) => {
-        const { filename } = req.query as IArtistSearchQueryString;
-        if (!filename) {
-          res.status(400).send({ error: 'Querystring "filename" is required' });
-          return;
-        }
-        done();
+      schema: {
+        querystring: searchArtistsQueryStringSchema,
       },
     },
     async function (req, res) {
-      let { name, filename } = req.query as IArtistSearchQueryString;
-      filename = path.parse(filename!).name;
+      let { name, filename } = req.query;
+      filename = path.parse(filename).name;
       let artistNames: string[] = name ? [name] : randomArtists;
 
       const stringifier = stringify({
@@ -60,7 +60,9 @@ export async function routes(server: FastifyInstance, options: any) {
           });
 
           resultStream.on('end', () => {
-            const isAllStreamEnded = allResultStreams.length === artistNames.length && allResultStreams.every((stream) => stream.readableEnded);
+            const isAllStreamEnded =
+              allResultStreams.length === artistNames.length &&
+              allResultStreams.every((stream) => stream.readableEnded);
             isAllStreamEnded && stringifier.end();
           });
         }
