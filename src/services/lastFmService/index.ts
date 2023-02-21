@@ -7,6 +7,8 @@ const api = axios.create({
   timeout: 0,
 });
 
+const MAX_LIMIT = 10000; // 10000 is the maximum limit allowed by Last.fm API
+
 interface SearchArtistByNameReturnType {
   totalResults: number;
   currentPage: number;
@@ -19,6 +21,10 @@ const searchArtistByName = async (
   page = 1,
   limit = 30,
 ): Promise<SearchArtistByNameReturnType> => {
+  if (limit > MAX_LIMIT) {
+    limit = MAX_LIMIT;
+  }
+
   try {
     const response: AxiosResponse = await api.get(
       '/2.0/?method=artist.search&artist=' +
@@ -57,6 +63,7 @@ const searchArtistByName = async (
     };
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      console.log('axios error', { data: error.response?.data })
       return Promise.reject(
         new Error('Error while fetching data from Last.fm API', { cause: error }),
       );
