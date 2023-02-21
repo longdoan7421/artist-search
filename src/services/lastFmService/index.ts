@@ -2,12 +2,12 @@ import { Artist } from '@/entities/Artist';
 import axios, { AxiosResponse } from 'axios';
 import { artistSearchSchema } from './validation';
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: process.env.LAST_FM_API_URL,
   timeout: 0,
 });
 
-const MAX_LIMIT = 10000; // 10000 is the maximum limit allowed by Last.fm API
+const MAX_ITEMS_PER_PAGE = 10000; // 10000 is the maximum limit allowed by Last.fm API
 
 interface SearchArtistByNameReturnType {
   totalResults: number;
@@ -16,13 +16,13 @@ interface SearchArtistByNameReturnType {
   artists: Artist[];
 }
 
-const searchArtistByName = async (
+export const searchArtistByName = async (
   name: string,
   page = 1,
   limit = 30,
 ): Promise<SearchArtistByNameReturnType> => {
-  if (limit > MAX_LIMIT) {
-    limit = MAX_LIMIT;
+  if (limit > MAX_ITEMS_PER_PAGE) {
+    limit = MAX_ITEMS_PER_PAGE;
   }
 
   try {
