@@ -1,7 +1,10 @@
-import lastFmService from '@/services/lastFmService';
+import randomArtists from '@/data/randomArtists.json';
+import { Artist } from '@/entities/Artist';
+import artistService from '@/services/artistService';
 import { stringify } from 'csv-stringify';
 import { FastifyInstance } from 'fastify';
 import path from 'node:path';
+import stream from "node:stream";
 
 export async function routes(server: FastifyInstance, options: any) {
   interface IArtistSearchQueryString {
@@ -24,42 +27,43 @@ export async function routes(server: FastifyInstance, options: any) {
     async function (req, res) {
       let { name, filename } = req.query as IArtistSearchQueryString;
       filename = path.parse(filename!).name;
-      if (!name) {
-        name = 'taylor swift'; // TODO: get random name from json source
-      }
+      let artistNames: string[] = name ? [name] : randomArtists;
+
+      const stringifier = stringify({
+        delimiter: ',',
+        header: true,
+        columns: ['name', 'mbid', 'url', 'imageSmall', 'image'],
+        quoted: true,
+      });
+
+      stringifier.on('error', (err) => {
+        req.log.error(err, 'stringifier stream occurred error');
+      });
 
       try {
-        let currentPage = 1;
-        let totalPage = 1;
-        const limit = 10000;
-        const result = await lastFmService.searchArtistByName(name, currentPage, limit);
+        const allResultStreams: stream.Readable[] = [];
+        for (const artistName of artistNames) {
+          const resultStream = artistService.findAllArtistByName(artistName);
+          allResultStreams.push(resultStream);
+          resultStream.on('readable', () => {
+            let row;
+            while ((row = resultStream.read()) !== null) {
+              const parsedRow = JSON.parse(row) as Artist[];
+              parsedRow.forEach((artist: Artist) => {
+                stringifier.write(artist);
+              });
+            }
+          });
 
-        totalPage = Math.ceil(result.totalResults / limit);
+          resultStream.on('error', (err) => {
+            req.log.error(err, `result stream of finding artist ${artistName} occurred error`);
+          });
 
-        const stringifier = stringify({
-          delimiter: ',',
-          header: true,
-          columns: ['name', 'mbid', 'url', 'imageSmall', 'image'],
-          quoted: true,
-        });
-
-        stringifier.on('error', (err) => {
-          req.log.error(err);
-        });
-
-        result.artists.forEach((artist) => {
-          stringifier.write(artist);
-        });
-
-        while (currentPage < totalPage) {
-          currentPage++;
-          const nextPageResult = await lastFmService.searchArtistByName(name, currentPage, 1000);
-          nextPageResult.artists.forEach((artist) => {
-            stringifier.write(artist);
+          resultStream.on('end', () => {
+            const isAllStreamEnded = allResultStreams.length === artistNames.length && allResultStreams.every((stream) => stream.readableEnded);
+            isAllStreamEnded && stringifier.end();
           });
         }
-
-        stringifier.end();
 
         res.headers({
           'Content-Type': 'text/csv',
