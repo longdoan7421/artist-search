@@ -1,7 +1,31 @@
+import { Artist } from '@/entities/Artist';
 import lastFmService from '@/services/lastFmService';
+import { PagedResult } from '@/types/common';
 import stream from 'node:stream';
 
-function findAllArtistByName(name: string): stream.Readable {
+/**
+ * Retrieve artists with given name
+ */
+async function searchArtistWithName(name: string, page?: number, limit?: number): Promise<PagedResult<Artist>> {
+  try {
+    const result = await lastFmService.searchArtistByName(name, page, limit);
+
+    return {
+      totalResults: result.totalResults,
+      currentPage: result.currentPage,
+      totalPage: Math.ceil(result.totalResults / result.limit),
+      pageSize: result.limit,
+      items: result.artists,
+    }
+  } catch (error) {
+    return Promise.reject(error);
+  }
+}
+
+/**
+ * Retrieve all artists with given name and return all results as a readable stream
+ */
+function searchAllArtistsWithName(name: string): stream.Readable {
   let currentPage = 1;
   let totalPage = 1;
   const limit = 1000;
@@ -39,7 +63,8 @@ function findAllArtistByName(name: string): stream.Readable {
 }
 
 const artistService = {
-  findAllArtistByName,
+  searchArtistWithName,
+  searchAllArtistsWithName,
 };
 
 export default artistService;

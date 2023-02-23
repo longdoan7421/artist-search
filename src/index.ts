@@ -1,7 +1,7 @@
 import '@/config'; // NOTE: need to be imported first to load env variables
 
 import fastify from 'fastify';
-import { routes } from './routes/artists';
+import { routes as artistRoutes } from './routes/artists';
 
 const server = fastify({
   logger: {
@@ -12,7 +12,7 @@ const server = fastify({
   },
 });
 
-server.register(routes, { prefix: '/api' });
+server.register(artistRoutes, { prefix: '/api/artists' });
 
 server.get('/status', function (req, res) {
   res.status(200).send({ status: 'ok' });

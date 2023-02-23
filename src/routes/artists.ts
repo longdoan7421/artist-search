@@ -1,33 +1,60 @@
-import randomArtists from '@/data/randomArtists.json';
 import { Artist } from '@/entities/Artist';
 import artistService from '@/services/artistService';
 import { stringify } from 'csv-stringify';
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import { FromSchema } from 'json-schema-to-ts';
 import path from 'node:path';
-import stream from 'node:stream';
 
 export async function routes(server: FastifyInstance, options: FastifyPluginOptions) {
   const searchArtistsQueryStringSchema = {
     type: 'object',
     properties: {
       name: { type: 'string' },
-      filename: { type: 'string' },
+      page: { type: 'number' },
+      limit: { type: 'number' },
     },
-    required: ['filename'],
+    required: ['name'],
   } as const;
 
   server.get<{ Querystring: FromSchema<typeof searchArtistsQueryStringSchema> }>(
-    '/artists',
+    '/',
     {
       schema: {
         querystring: searchArtistsQueryStringSchema,
       },
     },
     async function (req, res) {
-      let { name, filename } = req.query;
+      let { name: artistName, page, limit } = req.query;
+      try {
+        const result = await artistService.searchArtistWithName(artistName, page, limit);
+
+        return res.status(200).send(result);
+      } catch (error) {
+        req.log.error(error, 'Failed to search artist');
+        return res.status(500).send({ message: 'Failed to search artist' });
+      }
+    },
+  );
+
+  const saveArtistsToCsvQueryStringSchema = {
+    type: 'object',
+    properties: {
+      name: { type: 'string' },
+      filename: { type: 'string' },
+    },
+    required: ['name', 'filename'],
+  } as const;
+
+  server.get<{ Querystring: FromSchema<typeof saveArtistsToCsvQueryStringSchema> }>(
+    '/files',
+    {
+      schema: {
+        querystring: saveArtistsToCsvQueryStringSchema,
+      },
+    },
+    async function (req, res) {
+      let { name: artistName, filename } = req.query;
       filename = path.parse(filename).name;
-      let artistNames: string[] = name ? [name] : randomArtists;
 
       const stringifier = stringify({
         delimiter: ',',
@@ -41,10 +68,7 @@ export async function routes(server: FastifyInstance, options: FastifyPluginOpti
       });
 
       try {
-        const allResultStreams: stream.Readable[] = [];
-        for (const artistName of artistNames) {
-          const resultStream = artistService.findAllArtistByName(artistName);
-          allResultStreams.push(resultStream);
+        const resultStream = artistService.searchAllArtistsWithName(artistName);
           resultStream.on('readable', () => {
             let row;
             while ((row = resultStream.read()) !== null) {
@@ -60,12 +84,8 @@ export async function routes(server: FastifyInstance, options: FastifyPluginOpti
           });
 
           resultStream.on('end', () => {
-            const isAllStreamEnded =
-              allResultStreams.length === artistNames.length &&
-              allResultStreams.every((stream) => stream.readableEnded);
-            isAllStreamEnded && stringifier.end();
+            stringifier.end();
           });
-        }
 
         res.headers({
           'Content-Type': 'text/csv',
