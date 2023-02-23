@@ -20,13 +20,30 @@ npm install
 npm start
 ```
 
-4. Search artist by calling endpoint `/api/artists?name=artist_name&filename=csv_filename`
+4. Make API calls.
 
 e.g.
 
 ```bash
-curl "http://localhost:3000/api/artists?name=cher&filename=cher"
+curl "http://localhost:3000/api/artists?name=cher"
 ```
+
+## Available API endpoints
+
+### `/api/artists`
+
+query parameters:
+
+* `name` (required): name of artist
+* `limit` (optional): number of results should be returned
+* `page` (optional): get results from page number
+
+### `/api/artists/files`
+
+query parameters:
+
+* `name` (required): name of artist
+* `filename` (required): name of returned file
 
 ## Author
 - Long Doan
