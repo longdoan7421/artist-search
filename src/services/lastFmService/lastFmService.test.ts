@@ -40,7 +40,7 @@ describe('lastFmService', () => {
 
     // Assert
     expect(spyInstance.mock.calls.length).toBe(1);
-    expect(spyInstance.mock.calls[0][0]).toContain('limit=10000');
+    expect(spyInstance.mock.calls[0][1]?.params).toMatchObject({ limit: 10000 });
   });
 
   function getMockResponse(args: { totalResults: number; itemsPerPage: number }) {

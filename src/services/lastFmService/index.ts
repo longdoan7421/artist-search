@@ -26,16 +26,15 @@ export const searchArtistByName = async (
   }
 
   try {
-    const response: AxiosResponse = await api.get(
-      '/2.0/?method=artist.search&artist=' +
-        name +
-        '&api_key=' +
-        process.env.LAST_FM_API_KEY +
-        '&format=json&page=' +
-        page +
-        '&limit=' +
-        limit,
-    );
+    const params = {
+      method: 'artist.search',
+      api_key: process.env.LAST_FM_API_KEY,
+      format: 'json',
+      artist: name,
+      page,
+      limit,
+    };
+    const response: AxiosResponse = await api.get('/2.0', { params });
 
     const parsedResult = artistSearchSchema.safeParse(response.data);
 
@@ -63,7 +62,6 @@ export const searchArtistByName = async (
     };
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.log('axios error', { data: error.response?.data })
       return Promise.reject(
         new Error('Error while fetching data from Last.fm API', { cause: error }),
       );
