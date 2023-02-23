@@ -6,7 +6,11 @@ import stream from 'node:stream';
 /**
  * Retrieve artists with given name
  */
-async function searchArtistWithName(name: string, page?: number, limit?: number): Promise<PagedResult<Artist>> {
+async function searchArtistWithName(
+  name: string,
+  page?: number,
+  limit?: number,
+): Promise<PagedResult<Artist>> {
   try {
     const result = await lastFmService.searchArtistByName(name, page, limit);
 
@@ -16,7 +20,7 @@ async function searchArtistWithName(name: string, page?: number, limit?: number)
       totalPage: Math.ceil(result.totalResults / result.limit),
       pageSize: result.limit,
       items: result.artists,
-    }
+    };
   } catch (error) {
     return Promise.reject(error);
   }

@@ -69,23 +69,23 @@ export async function routes(server: FastifyInstance, options: FastifyPluginOpti
 
       try {
         const resultStream = artistService.searchAllArtistsWithName(artistName);
-          resultStream.on('readable', () => {
-            let row;
-            while ((row = resultStream.read()) !== null) {
-              const parsedRow = JSON.parse(row) as Artist[];
-              parsedRow.forEach((artist: Artist) => {
-                stringifier.write(artist);
-              });
-            }
-          });
+        resultStream.on('readable', () => {
+          let row;
+          while ((row = resultStream.read()) !== null) {
+            const parsedRow = JSON.parse(row) as Artist[];
+            parsedRow.forEach((artist: Artist) => {
+              stringifier.write(artist);
+            });
+          }
+        });
 
-          resultStream.on('error', (err) => {
-            req.log.error(err, `result stream of finding artist ${artistName} occurred error`);
-          });
+        resultStream.on('error', (err) => {
+          req.log.error(err, `result stream of finding artist ${artistName} occurred error`);
+        });
 
-          resultStream.on('end', () => {
-            stringifier.end();
-          });
+        resultStream.on('end', () => {
+          stringifier.end();
+        });
 
         res.headers({
           'Content-Type': 'text/csv',
