@@ -1,4 +1,6 @@
+import randomArtists from '@/data/randomArtists.json';
 import { Artist } from '@/entities/Artist';
+import { getMultipleRandomElements } from '@/utils/random';
 import axios, { AxiosResponse } from 'axios';
 import { artistSearchSchema } from './validation';
 
@@ -44,7 +46,7 @@ export const searchArtistByName = async (
       );
     }
 
-    const artists: Artist[] = parsedResult.data.results.artistmatches.artist.map((artist) => {
+    let artists: Artist[] = parsedResult.data.results.artistmatches.artist.map((artist) => {
       return {
         name: artist.name,
         mbid: artist.mbid,
@@ -53,6 +55,11 @@ export const searchArtistByName = async (
         image: artist.image.find((image) => image.size === 'medium')?.['#text'] || '',
       };
     });
+
+    // If the API returns no results, we return a random list of artists
+    if (artists.length === 0) {
+      artists = getMultipleRandomElements(randomArtists, limit);
+    }
 
     return {
       totalResults: parsedResult.data.results['opensearch:totalResults'],
